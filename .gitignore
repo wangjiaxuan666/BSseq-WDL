@@ -1,0 +1,6 @@
+sample_*/
+.fq*
+.fastq*
+.gtf*
+.gff*
+SRR[0-9][0-9][0-9]*
