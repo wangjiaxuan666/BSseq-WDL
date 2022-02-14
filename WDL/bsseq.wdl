@@ -86,6 +86,7 @@ workflow bsseq {
 
     output {
         String? bsseeker_index  = bsseeker_build_index.index
+        Array[String?]? sample = bsseeker_fastq_qc.sample_name
         Array[File?]? fastp_filter_fq1 = bsseeker_fastq_qc.filter_fq1
         Array[File?]? fastp_filter_fq2 = bsseeker_fastq_qc.filter_fq2
         Array[File?]? fastp_filter_report_json = bsseeker_fastq_qc.filter_report_json

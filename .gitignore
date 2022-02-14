@@ -2,5 +2,6 @@ sample_*/
 .fq*
 .fastq*
 .gtf*
+bsseq.output.json
 .gff*
 SRR[0-9][0-9][0-9]*
