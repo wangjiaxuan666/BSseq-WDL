@@ -1,0 +1,280 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+
+import os
+import subprocess
+import tempfile
+import logging
+
+import sys
+
+
+VERSION = "1.0.1"
+
+
+if sys.version_info[0] > 3:
+    print("This script requires Python 2.7")
+    exit(1)
+
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s : %(levelname)s : %(message)s',
+                    datefmt='%H:%M:%S')
+logger = logging.getLogger(__name__)
+
+
+    
+import argparse
+import json
+
+#%%
+def is_in_path(path):
+    try:
+        if (
+            subprocess.run(
+                ["which", path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            ).returncode
+            != 0
+        ):
+            return False
+    except:
+        return False
+    return True
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Virus insertion finder"
+    )
+
+    parser.add_argument("--sample_id", type=str, help="sample id", required=True)
+
+    parser.add_argument("--virus_type", type=str, help="virus_type", required=True)
+
+    parser.add_argument("--left", help="Path to one of the two paired samples")
+
+    parser.add_argument("--right", help="Path to one of the two paired samples")
+
+
+    parser.add_argument(
+        "--genome_lib_dir",
+        default=os.environ.get("CTAT_GENOME_LIB"),
+        help="Genome lib directory - see http://FusionFilter.github.io for details. Uses env variable CTAT_GENOME_LIB as default",
+    )
+
+
+    parser.add_argument("--viral_fasta", help="Viral fasta (default: under --genome_lib_dir, VIF/virus_db.fasta")
+
+    parser.add_argument("--star_index_plus_virus", type=str, help="STAR index containing both host and viral genomes, default: under --genome_lib_dir, VIF/hg_plus_viraldb.fasta.star.idx")
+
+    
+    parser.add_argument("--cpu", type=int, help="Number of CPUs for multi-threaded steps")
+
+    parser.add_argument(
+        "--min_reads", type=int, help="Filter insertion sites candidates that do not have at least 'min_reads' for use with chimeric contig construction (2nd phase)",
+        default=10
+    )
+    
+    parser.add_argument("--star_init_two_pass_mode", help="STAR init 2-pass mapping mode", choices=['Basic', 'None'],
+        default='Basic')
+
+    parser.add_argument("--star_validate_two_pass_mode", help="STAR validate 2-pass mapping mode", choices=['Basic', 'None'],
+                        default='Basic')
+    
+    parser.add_argument(
+        "--no_remove_duplicates", action="store_true", help="do NOT remove duplicates"
+    )
+
+    parser.add_argument(
+        "--star_init_only", action="store_true", help="Only perform initial STAR chimeric junction analysis"
+    )
+
+    parser.add_argument(
+        "--cromwell", help="Optional path to cromwell jar file",
+    )
+
+    parser.add_argument(
+        "-O",
+        "--outputdir",
+        dest="outputdir",
+        required=True,
+        type=str,
+        help="Output directory",
+    )
+
+    parser.add_argument("--version", action='store_true', help="show version tag: {}".format(VERSION))
+
+    parser.add_argument("--max_hits", default=1, type=int, help='maximum number of multimapping allowed for chimeric reads (1=unique chim reads only)')
+
+    args = parser.parse_args()
+
+    if args.version:
+        exit(VERSION)
+
+    if not args.genome_lib_dir:
+        exit("\n\tError, must specify --genome_lib_dir or have env var CTAT_GENOME_LIB set accordingly")
+
+    
+    left = args.left
+    right = args.right
+    virus_type = args.virus_type
+    ctat_genome_lib_path = os.path.abspath(args.genome_lib_dir)
+
+
+    viral_fasta = args.viral_fasta
+    if not virus_type:
+        virus_type = "hpv16"
+    if not viral_fasta:
+        viral_fasta = os.path.join(ctat_genome_lib_path, "VIF_{}/virus_db.fasta".format(virus_type))
+        
+    if not os.path.exists(viral_fasta):
+        exit("Error, cannot locate {}".format(viral_fasta))
+    
+    star_index_plus_virus = args.star_index_plus_virus
+    if not star_index_plus_virus:
+        star_index_plus_virus = os.path.join(ctat_genome_lib_path, "VIF_{}/hg_plus_viraldb.fasta.star.idx".format(virus_type)) 
+
+    if not os.path.exists(star_index_plus_virus):
+        exit("Error, cannot locate {}".format(star_index_plus_virus))
+    
+
+    cromwell = args.cromwell
+    remove_duplicates = not args.no_remove_duplicates
+    star_init_only = args.star_init_only
+    min_reads = args.min_reads
+    max_hits = args.max_hits
+    
+    cpu = args.cpu
+    output_directory = os.path.abspath(args.outputdir)
+    star_validate_two_pass_mode = args.star_validate_two_pass_mode
+    star_init_two_pass_mode = args.star_init_two_pass_mode
+
+
+    if ctat_genome_lib_path is None or not os.path.exists(ctat_genome_lib_path):
+        exit("Missing path to CTAT_GENOME_LIB in $CTAT_GENOME_LIB.")
+
+    if left is not None:
+        left = os.path.abspath(left)
+    if right is not None:
+        right = os.path.abspath(right)
+
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    util_dir = os.path.join(base_dir, "util")
+    ctat_genome_lib_path = os.path.abspath(ctat_genome_lib_path)
+    if not os.path.exists(ctat_genome_lib_path):
+        exit("CTAT_GENOME_LIB at {} not found".format(ctat_genome_lib_path))
+
+    gtf = os.path.join(ctat_genome_lib_path, "ref_annot.gtf")
+    ref_fasta = os.path.join(ctat_genome_lib_path, "ref_genome.fa")
+    if not os.path.exists(gtf):
+        exit('{} not found'.format(gtf))
+    if not os.path.exists(ref_fasta):
+        exit('{} not found'.format(ref_fasta))
+        
+    input_json = {}
+    input_json['sample_id'] = args.sample_id
+    input_json["ref_genome_gtf"] = gtf
+    input_json["ref_genome_fasta"] = ref_fasta
+    input_json['autodetect_cpu'] = False
+    input_json['star_cpu'] = cpu
+    
+    input_json['star_init_two_pass_mode'] = star_init_two_pass_mode
+    input_json['star_validate_two_pass_mode'] = star_validate_two_pass_mode
+    
+    star_index_human_only = ref_fasta + ".star.idx"
+    input_json['star_index_human_only_dirpath'] = star_index_human_only
+
+    input_json['star_index_human_plus_virus_dirpath'] = star_index_plus_virus
+
+    input_json['viral_fasta'] = viral_fasta
+
+    
+    if left is not None:
+        input_json["left"] = left
+    if right is not None:
+        input_json["right"] = right
+
+    input_json['min_reads'] = min_reads
+    input_json['max_hits'] = max_hits
+    input_json['star_init_only'] = star_init_only
+    input_json["remove_duplicates"] = remove_duplicates
+    if cpu is None:
+        cpu = min(16, os.cpu_count())
+    input_json["star_cpu"] = cpu
+    input_json["util_dir"] = util_dir
+    input_json["docker"] = "a/b"  # hack to make cromwell happy
+
+    
+    #_, json_file = tempfile.mkstemp(suffix=".json")
+    #_, meta_file = tempfile.mkstemp(suffix=".json")
+
+    json_file = os.path.abspath("ctat-vif.input.json")
+    meta_file = os.path.abspath("ctat-vif.meta.json")
+    
+    wdl_dir = os.path.join(base_dir, "WDL")
+    cromwell_jar = None
+    if cromwell is None:
+        for f in os.listdir(wdl_dir):
+            if f.startswith('cromwell-') and f.endswith('.jar'):
+                cromwell_jar = os.path.join(wdl_dir, f)
+                break
+    else:
+        cromwell_jar = os.path.abspath(cromwell)
+    if cromwell_jar is None or not os.path.exists(cromwell_jar):
+        exit(
+            "Cromwell jar file not found. Please run download_cromwell.sh to download."
+        )
+    cromwell_conf = os.path.join(wdl_dir, "cromwell.conf")
+    if not os.path.exists(cromwell_conf):
+        exit("Cromwell configuration not found")
+
+    if output_directory is not None and not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    input_json_with_prefix = {}
+    for key in input_json:
+        input_json_with_prefix["ctat_vif.{}".format(key)] = input_json[key]
+    with open(json_file, "wt") as out:
+        out.write(json.dumps(input_json_with_prefix, indent=4)
+                  )
+        
+    cromwell_args = [
+            "java",
+            "-Dconfig.file={}".format(cromwell_conf),
+            "-jar",
+            cromwell_jar,
+            "run",
+            "-i",
+            json_file,
+            '-m',
+            meta_file,
+            os.path.join(wdl_dir, "ctat_VIF.wdl"),
+    ]
+
+    logger.info("CMD: {}".format(" ".join(cromwell_args)))
+    
+    subprocess.run(cromwell_args, cwd=output_directory)
+    #os.remove(json_file)
+    with open(meta_file, 'rt', encoding='UTF-8') as f:
+        metadata = json.load(f)
+    #os.remove(meta_file)
+    if 'outputs' in metadata:
+        outputs = metadata['outputs']
+        for key in outputs:
+            path = outputs[key]
+            if path is not None and isinstance(path, str) and os.path.exists(path):
+                name = os.path.basename(path)
+                dst = name if output_directory is None else os.path.join(output_directory, name)
+                if os.path.exists(dst):
+                    os.remove(dst)
+                os.symlink(path, dst)
+
+
+if __name__ == "__main__":
+    if "--version" in sys.argv:
+        print(f"ctat-vif v{VERSION}")
+        sys.exit(0)
+    
+    main()
+
+# %%
