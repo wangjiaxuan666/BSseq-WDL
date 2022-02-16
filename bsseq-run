@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import subprocess
+import tempfile
+import logging
+import sys
+import re
+
+
+VERSION = "0.1"
+
+
+if sys.version_info[0] < 3:
+    print("This script requires Python 3+")
+    exit(1)
+
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s : %(levelname)s : %(message)s',
+                    datefmt='%H:%M:%S')
+logger = logging.getLogger(__name__)
+
+
+import argparse
+import json
+
+def is_in_path(path):
+    try:
+        if subprocess.run(["which",path],stdout=subprocess.PIPE,stderr=subprocess.STDOUT).returncode != 0:
+            return False
+    except:
+        return False
+    return True
+
+def run_shell(cmd):
+    status = 0
+    try:
+        output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        status = e.returncode
+        output = e.output
+    output = output.decode()
+    return (status, output)
+
+if not is_in_path("samtools") and not is_in_path("fastq") and not is_in_path("cgmaptools") and not is_in_path("java"):
+    exit("please check the env if have samtools cgmaptools fasatq")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="BS-seq analysis workflow base on bsseeker and CGmaptools"
+    )
+
+    parser.add_argument("--input","-i",type=str, help="the input json", required=True)
+
+    parser.add_argument(
+        "--cromwell","-c", help="Optional path to cromwell jar file",
+    )
+
+    parser.add_argument("--version", "-v", action='store_true', help="show version tag: {}".format(VERSION))
+
+    args = parser.parse_args()
+
+    if args.version:
+        exit(VERSION)
+
+    cromwell = args.cromwell
+    input_json = args.input
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    wdl_dir = os.path.join(base_dir, "WDL")
+    meta_file = "bsseq.output.json"
+    
+    cromwell_jar = None
+    if cromwell is None:
+        for f in os.listdir(wdl_dir):
+            if f.startswith('cromwell-') and f.endswith('.jar'):
+                cromwell_jar = os.path.join(wdl_dir, f)
+                break
+    else:
+        cromwell_jar = os.path.abspath(cromwell)
+    if cromwell_jar is None or not os.path.exists(cromwell_jar):
+        exit(
+            "Cromwell jar file not found. Please run download_cromwell.sh to download."
+        )
+
+    if input_json is None and not os.path.exists("bsseq.input.json"):
+        exit("Need the input parameter with json files")
+    else:
+        input_json = "bsseq.input.json"
+
+    cromwell_args = [
+        "java",
+        "-jar",
+        cromwell_jar,
+        "run",
+        "-i",
+        input_json,
+        '-m',
+        meta_file,
+        os.path.join(wdl_dir, "bsseq.wdl"),
+    ]
+
+    logger.info("CMD: {}".format(" ".join(cromwell_args)))
+        
+    subprocess.run(cromwell_args)
+
+if __name__ == "__main__":
+    if "--version" in sys.argv:
+        print(f"ctat-vif v{VERSION}")
+        sys.exit(0)
+    
+    main()

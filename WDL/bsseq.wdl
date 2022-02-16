@@ -56,6 +56,7 @@ workflow bsseq {
             }
             call bsseeker_align_mergeBam {
                 input:
+                sample_name = bsseeker_fastq_qc.sample_name,
                 bams = bsseeker_align_bam.bam
             }
 
@@ -72,6 +73,7 @@ workflow bsseq {
 
             call bsseeker_call_methy_merge {
                 input :
+                    sample_name = bsseeker_fastq_qc.sample_name,
                     wig = bsseeker_call_methy.wig,
                     ATCGmap = bsseeker_call_methy.ATCGmap,
                     CGmap = bsseeker_call_methy.CGmap
@@ -79,6 +81,7 @@ workflow bsseq {
 
             call cgmaptools_call_snp {
                 input:
+                sample_name = bsseeker_fastq_qc.sample_name,
                 ATCGmap = bsseeker_call_methy_merge.ATCGmap
             }
         }
@@ -86,11 +89,12 @@ workflow bsseq {
 
     output {
         String? bsseeker_index  = bsseeker_build_index.index
+        #Array[String?]? sample = select_first([bsseeker_fastq_qc.sample_name])
         Array[File?]? fastp_filter_fq1 = bsseeker_fastq_qc.filter_fq1
         Array[File?]? fastp_filter_fq2 = bsseeker_fastq_qc.filter_fq2
-        Array[File?]? fastp_filter_report_json = bsseeker_fastq_qc.filter_report_json
-        Array[File?]? fastp_filter_report_html = bsseeker_fastq_qc.filter_report_html
-        Array[File?]?bsseeker_call_methylation_bam = bsseeker_align_mergeBam.bs_bam
+        #Array[File?]? fastp_filter_report_json = bsseeker_fastq_qc.filter_report_json
+        #Array[File?]? fastp_filter_report_html = bsseeker_fastq_qc.filter_report_html
+        Array[File?]? bsseeker_call_methylation_bam = bsseeker_align_mergeBam.bs_bam
         Array[File?]? bsseeker_call_methylation_bam_bai = bsseeker_align_mergeBam.bs_bai
         Array[File?]? bsseeker_methy_wig = bsseeker_call_methy_merge.wig
         Array[File?]? bsseeker_methy_ATCGmap = bsseeker_call_methy_merge.ATCGmap
@@ -143,7 +147,7 @@ task bsseeker_fastq_qc {
     }
 
     output {
-        String sample_name = "${sample_name}"
+        String sample_name = sample_name
         File filter_fq1 = "${sample_name}.filter.R1.fq.gz"
 	    File filter_fq2 = "${sample_name}.filter.R2.fq.gz"
         File filter_report_json = "fastp.json"
@@ -158,8 +162,8 @@ task bsseeker_align_splitFq {
         File? filter_fq2
     }
     command {
-        zcat ${filter_fq1} | split -l 500 - R1_
-        zcat ${filter_fq2} | split -l 500 - R2_
+        zcat ${filter_fq1} | split -l 20000000 - R1_
+        zcat ${filter_fq2} | split -l 20000000 - R2_
     }
     # 20,000,000 reads
     output {
@@ -222,29 +226,30 @@ task bsseeker_align_bam {
 
 task bsseeker_align_mergeBam {
     input {
+        String? sample_name
         Array[Array[File]] bams
         Array[String] bams_l = flatten(bams)
     }
 
     command {
         samtools merge merge.bam ${sep=' ' bams_l}
-        samtools sort merge.bam -o sort.bam
-        samtools view -h sort.bam | grep -v 'XS:i:1' | samtools view -bS - > sort_rmSX.bam
-        samtools index sort_rmSX.bam
+        samtools sort merge.bam -o ${sample_name}_sort.bam
+        samtools view -h ${sample_name}_sort.bam | grep -v 'XS:i:1' | samtools view -bS - > ${sample_name}_sort_rmSX.bam
+        samtools index ${sample_name}_sort_rmSX.bam
         rm merge.bam 
-        samtools idxstats sort_rmSX.bam |cut -f 1 |grep -e "[A-Za-z1-9]" > chr.id
+        samtools idxstats ${sample_name}_sort_rmSX.bam |cut -f 1 |grep -e "[A-Za-z1-9]" > chr.id
     }
     output {
-        File merge_sort_bam = "sort.bam"
-        File bs_bam = "sort_rmSX.bam"
-        File bs_bai = "sort_rmSX.bam.bai"
+        File merge_sort_bam = "${sample_name}_sort.bam"
+        File bs_bam = "${sample_name}_sort_rmSX.bam"
+        File bs_bai = "${sample_name}_sort_rmSX.bam.bai"
         Array[String] id = read_lines("chr.id")
     }
 }
 
 task bsseeker_call_methy {
     input {
-        String CHR = CHR
+        String CHR
         String python_file
         String run_call_methy
         String? genome_db
@@ -275,45 +280,41 @@ task bsseeker_call_methy {
 
 task bsseeker_call_methy_merge {
     input{
-        # Array[Array[File]] wig
-        # Array[String] wig_l = flatten(wig)
-        # Array[Array[File]] ATCGmap
-        # Array[String] ATCGmap_l = flatten(ATCGmap)
-        # Array[Array[File]] CGmap
-        # Array[String] CGmap_l = flatten(CGmap)
+        String? sample_name
         Array[String] wig
         Array[String] ATCGmap
         Array[String] CGmap
     }
 
     command {
-        zcat ${sep=' ' wig} > merge.wig
-        zcat ${sep=' ' ATCGmap} > merge.ATCGmap
-        zcat ${sep=' ' CGmap} > merge.CGmap
+        zcat ${sep=' ' wig} > ${sample_name}.wig
+        zcat ${sep=' ' ATCGmap} > ${sample_name}.ATCGmap
+        zcat ${sep=' ' CGmap} > ${sample_name}.CGmap
     }
 
     output {
-        File wig = "merge.wig"
-        File ATCGmap = "merge.ATCGmap"
-        File CGmap = "merge.CGmap"
+        File wig = "${sample_name}.wig"
+        File ATCGmap = "${sample_name}.ATCGmap"
+        File CGmap = "${sample_name}.CGmap"
     }
 }
 
 task cgmaptools_call_snp {
     input {
+        String? sample_name
         File ATCGmap
     }
     command {
         cgmaptools snv \
         -i ${ATCGmap} \
         -m bayes \
-        -v bayes.vcf \
-        -o bayes.snv \
+        -v ${sample_name}_bayes.vcf \
+        -o ${sample_name}_bayes.snv \
         --bayes-dynamicP
     }
     
     output {
-        File snv = "bayes.snv"
-        File vcf = "bayes.vcf"
+        File snv = "${sample_name}_bayes.snv"
+        File vcf = "${sample_name}_bayes.vcf"
     }
 }
