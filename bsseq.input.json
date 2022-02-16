@@ -1,7 +1,7 @@
 {
-    "bsseq.genome_index" : "/jdfssz1/ST_HEALTH/P21Z10200N0092/wangjiaxuan/workflow/BSseq/cromwell-executions/bsseq/8192ee01-c8c3-43be-ae31-f4468b5fb1f3/call-bsseeker_build_index/execution/test.fa_bowtie2/",
-    "bsseq.python_file" : "/jdfssz1/ST_HEALTH/P21Z10200N0092/wangjiaxuan/biosoft/miniconda3/envs/py27/bin/python",
-    "bsseq.bsseeker_util_dir" : "/jdfssz1/ST_HEALTH/P21Z10200N0092/wangjiaxuan/biosoft/BSseeker",
+    "bsseq.genome_index" : "error_path_just_for_test/test.fa_bowtie2/",
+    "bsseq.python_file" : "wangjiaxuan/biosoft/miniconda3/envs/py27/bin/python",
+    "bsseq.bsseeker_util_dir" : "wangjiaxuan/biosoft/BSseeker",
     "bsseq.refer_fa" : "./test/test.fa",
     "bsseq.alig_software" : "bowtie2",
     "bsseq.fastq_table" : "./test/input_sample_fq.tsv",
