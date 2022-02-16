@@ -32,6 +32,7 @@ BSseq-WDl 是我根据 BS-seeker2 + CGmapTools 为基础搭建的甲基化分析
 - 参数输入文件：*.json
 - 样本名称和fq路径表格文件：*.tsv
 
+
 输出文件需要添加 -m 参数，详情请见**运行**部分，输出的json文件：
 包括了：
 
@@ -104,6 +105,29 @@ sample_B	./test/sample_B.test.1k.R1.fq.gz	./test/sample_B.test.1k.R2.fq.gz
 另外参数`refer_fa`是必须参数，除此以外，必须的参数还有python2.7路径的`python_file`，BSseeker的脚本目录`bsseeker_util_dir`，输入上文提到的tsv表格的`fastq_table`，以及比对软件`alig_software`。
 
 ### 运行
+
+#### 方法一
+
+运行流程, 我写了一个python的外包，运行`./bsseq-run -i bsseq.input.json`就可以开始分析，参数`-i`控制输入的json文件，`-c`是指定的cromwell.jar的路径，默认是在WDL文件下的。
+
+```python
+# 参数
+# usage: bsseq-run [-h] --input INPUT [--cromwell CROMWELL] [--version]
+
+# BS-seq analysis workflow base on bsseeker and CGmaptools
+
+# optional arguments:
+#  -h, --help            show this help message and exit
+#  --input INPUT, -i INPUT
+#                       the input json
+#  --cromwell CROMWELL, -c CROMWELL
+#                       Optional path to cromwell jar file
+#  --version, -v         show version tag: 0.1
+```
+
+#### 方法二
+
+当然外包的python又需要python3的环境，而运行BSseeker是python2的环境，我也没无奈，因为我不会python2，所以嫌麻烦也可以直接运行命令行：
 
 ```bash
 java -jar WDL/WDL/cromwell-58.jar run WDL/bsseq.wdl -i bsseq.input.json -m bsseq.output.json
