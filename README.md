@@ -1,21 +1,28 @@
-# BSseq-WDL
+# BSseq-WDL :wrench: 
+
+**Author**: [Jiaxuan Wang](https://abego.cn/) :pencil:
+
+[![](https://img.shields.io/badge/follow%20me%20on-WeChat-green.svg)](https://pic-1259340288.cos.ap-guangzhou.myqcloud.com/back/qrcode_for_Wechat.jpg)
 
 # BSseq-WDl流程介绍
 
-## 背景
+## 背景 :foggy:
 
-BSseq-WDl 是我根据 BS-seeker2 + CGmapTools 为基础搭建的甲基化分析主要流程。说是主要，其实就是输出到甲基化结果文件（甲基化位点和甲基化率）。输出文件
+BSseq-WDl 是我根据 BS-seeker2 + CGmapTools 为基础搭建的甲基化分析主要流程。说是主要，其实就是输出到甲基化结果文件（甲基化位点和甲基化率）。
 
-> 可以类比为RNA-seq输出了表达矩阵，但是后续的差异，可视化这些我都没开始弄。原因主要是工作是做单细胞和空间组的。而且表观基因组学一直是我认为组学里面最难的。所以如果想做的完善，肯定要投入很多时间和精力，我只是业余时间搞的，后续有时间再搞。但是输出表达矩阵应该对很多分析是够用的。
+{{< pan 输出文件 >}} 可以类比为RNA-seq输出了表达矩阵，但是后续的差异，可视化这些我都没开始弄。原因主要是工作是做单细胞和空间组的。而且表观基因组学一直是我认为组学里面最难的。所以如果想做的完善，肯定要投入很多时间和精力，我只是业余时间搞的，后续有时间再搞。但是输出表达矩阵应该对很多分析是够用{{< /pan >}}
 
-## 该流程的优点
+## 该流程的优点:trophy:
 
 说这个流程的优点，其实就是说wdl的优点，相比于之前用shell写的。我觉得wdl最大优点就是：
 - 彻底不用管文件的归档和存放，文件的输出和输入实现流程化控制
 - 任务的并行运行，以及多个任务的多次调用比较方便
 - 搭建虽然辛苦，但是维护起来比较简单
 
-但是说完优点，也要说缺点，真的也是有点难以忍受：
+## 该流程的缺点:closed_book:
+
+*但是说完优点，也要说缺点，真的也是有点难以忍受*
+
 - 没有积极活跃的社区，用户少，意味着问题很大概率要自己debug，让人崩溃
 - workflow，call，task 三者都要一个input，再加上一个output。一直让人来回输入那几个变量（因为要变量承上启下，还要声明），繁琐且容易报错，让人没有感觉到一点代码的简洁之美。
 - 文件放在特定的目录下，层级太多，很难找到，必须搭配输出的json文件
@@ -23,15 +30,14 @@ BSseq-WDl 是我根据 BS-seeker2 + CGmapTools 为基础搭建的甲基化分析
 
 其他的缺点暂时想不到了，如果一句话概括就是：
 
-> 过程很痛苦，结果很美好，可能是流程控制语言的通病吧
+**过程很痛苦，结果很美好，可能是流程控制语言的通病吧**
 
-## 流程空间流程
+## 流程空间流程:package:
 
 用wdl编写流程，需要cromwell.jar才能运行，输入文件有两个：
 
-- 参数输入文件：*.json
-- 样本名称和fq路径表格文件：*.tsv
-
+- :palm_tree:参数输入文件：*.json
+- :cactus:样本名称和fq路径表格文件：*.tsv
 
 输出文件需要添加 -m 参数，详情请见**运行**部分，输出的json文件：
 包括了：
@@ -43,11 +49,11 @@ BSseq-WDl 是我根据 BS-seeker2 + CGmapTools 为基础搭建的甲基化分析
 
 其中`*.ATCGmap`,`*.CGmap`是主要输出结果，前者代表是多种类型的甲基化位点结果（CHH，CHG，CG），后者只有CG类型的甲基化位点信息。结果是表格形式的，分别存储有位点，绝对甲基化reads数和相对的甲基化率等数值。
 
-整体流程采用并行的方法，最大效率提高了运行速度和准确性：
+**流程采用并行的方法，大幅提高了运行速度和准确性**
 
 ![image-20220215091200415](https://pic-1259340288.cos.ap-guangzhou.myqcloud.com/img/202202150912001644887520Ovne4Bimage-20220215091200415.png)
 
-## 环境要求
+## 环境要求:mushroom:
 
 本流程运行需要以下环境：
 
@@ -58,10 +64,10 @@ BSseq-WDl 是我根据 BS-seeker2 + CGmapTools 为基础搭建的甲基化分析
 
 关于BSseeker和CGmapTools的安装示例问题，可以参考后文
 
-## 流程运行
+## 流程运行:shell:
 
 ### 软件下载
-下载Github仓库，解压，在联网环境下，运行`download_cromwell.sh`脚本，下载`cromwell-58.jar`,如果已经有`cromwell`其他版本的可以不用下载，可以自行尝试是否版本兼容。
+下载Github仓库，解压，在联网环境下，运行`download_cromwell.sh`脚本，下载`cromwell-58.jar`:coffee:,如果已经有`cromwell`:coffee:其他版本的可以不用下载，可以自行尝试是否版本兼容。
 
 ```bash
 bash download_cromwell.sh
@@ -106,7 +112,7 @@ sample_B	./test/sample_B.test.1k.R1.fq.gz	./test/sample_B.test.1k.R2.fq.gz
 
 ### 运行
 
-#### 方法一
+#### 方法一:snake:
 
 运行流程, 我写了一个python的外包，运行`./bsseq-run -i bsseq.input.json`就可以开始分析，参数`-i`控制输入的json文件，`-c`是指定的cromwell.jar的路径，默认是在WDL文件下的。
 
@@ -125,7 +131,7 @@ sample_B	./test/sample_B.test.1k.R1.fq.gz	./test/sample_B.test.1k.R2.fq.gz
 #  --version, -v         show version tag: 0.1
 ```
 
-#### 方法二
+#### 方法二 :coffee:
 
 当然外包的python又需要python3的环境，而运行BSseeker是python2的环境，我也没无奈，因为我不会python2，所以嫌麻烦也可以直接运行命令行：
 
@@ -134,32 +140,40 @@ java -jar WDL/WDL/cromwell-58.jar run WDL/bsseq.wdl -i bsseq.input.json -m bsseq
 # -m 参数是输出文件，可以不写，但是不写后续分析很麻烦
 ```
 
-### 结果解读
+### 结果解读:tea:
 
 结果可能有点疑惑，但这也是wdl的特性，输出文件都会在cromwell-executions文件里，里面根据task来进行分文件，又进一步细分为input和execution。但是看`bsseq.output.json`就不会疑惑了。
 
 有用的信息，我都output了
 
 Example：
-```
+```json
   "outputs": {
-    "bsseq.bsseeker_call_methylation_bam_bai": ["call-bsseeker_align_mergeBam/shard-0/execution/sort_rmSX.bam.bai", "call-bsseeker_align_mergeBam/shard-1/execution/sort_rmSX.bam.bai"],
-    "bsseq.bsseeker_call_methylation_bam": ["call-bsseeker_align_mergeBam/shard-0/execution/sort_rmSX.bam", "call-bsseeker_align_mergeBam/shard-1/execution/sort_rmSX.bam"],
+    "bsseq.bsseeker_call_methylation_bam_bai": ["sort_rmSX.bam.bai", "sort_rmSX.bam.bai"],
+    "bsseq.bsseeker_call_methylation_bam": ["sort_rmSX.bam"],
     "bsseq.sample": ["sample_A", "sample_B"],
-    "bsseq.fastp_filter_report_json": ["call-bsseeker_fastq_qc/shard-0/execution/fastp.json", "call-bsseeker_fastq_qc/shard-1/execution/fastp.json"],
-    "bsseq.fastp_filter_fq1": ["call-bsseeker_fastq_qc/shard-0/execution/sample_A.filter.R1.fq.gz", "call-bsseeker_fastq_qc/shard-1/execution/sample_B.filter.R1.fq.gz"],
-    "bsseq.bsseeker_methy_CGmap": ["call-bsseeker_call_methy_merge/shard-0/execution/merge.CGmap", "call-bsseeker_call_methy_merge/shard-1/execution/merge.CGmap"],
-    "bsseq.bsseeker_index": "call-bsseeker_build_index/execution/test.fa_bowtie2",
-    "bsseq.bsseeker_methy_wig": ["call-bsseeker_call_methy_merge/shard-0/execution/merge.wig", "call-bsseeker_call_methy_merge/shard-1/execution/merge.wig"],
-    "bsseq.cgmaptools_methy_snv": ["call-cgmaptools_call_snp/shard-0/execution/bayes.snv", "call-cgmaptools_call_snp/shard-1/execution/bayes.snv"],
-    "bsseq.fastp_filter_fq2": ["call-bsseeker_fastq_qc/shard-0/execution/sample_A.filter.R2.fq.gz", "call-bsseeker_fastq_qc/shard-1/execution/sample_B.filter.R2.fq.gz"],
-    "bsseq.cgmaptools_methy_vcf": ["call-cgmaptools_call_snp/shard-0/execution/bayes.vcf", "call-cgmaptools_call_snp/shard-1/execution/bayes.vcf"],
-    "bsseq.bsseeker_methy_ATCGmap": ["call-bsseeker_call_methy_merge/shard-0/execution/merge.ATCGmap", "call-bsseeker_call_methy_merge/shard-1/execution/merge.ATCGmap"],
-    "bsseq.fastp_filter_report_html": ["call-bsseeker_fastq_qc/shard-0/execution/fastp.html", "call-bsseeker_fastq_qc/shard-1/execution/fastp.html"]
-  }
+    "bsseq.fastp_filter_fq1": ["sample_B.filter.R1.fq.gz"],
+    "bsseq.bsseeker_methy_CGmap": ["merge.CGmap"],
+    "bsseq.bsseeker_index": "test.fa_bowtie2",
+    "bsseq.bsseeker_methy_wig": ["merge.wig"],
+    "bsseq.cgmaptools_methy_snv": ["bayes.snv"],
+    "bsseq.fastp_filter_fq2": ["sample_B.filter.R2.fq.gz"],
+    "bsseq.cgmaptools_methy_vcf": ["bayes.vcf"],
+    "bsseq.bsseeker_methy_ATCGmap": ["merge.ATCGmap"]
+    }
+# 信息匿去部分信息，本身是按照样本输出的
 ```
 
-## 软件安装
+### 甲基化结果文件展示：:cocktail:
+
+我们拿ATCGmap文件举例，结果是文本格式，包含甲基化位点和甲基化水平 ![image-20220216175351916](https://pic-1259340288.cos.ap-guangzhou.myqcloud.com/img/202202161753521645005232A6WlOximage-20220216175351916.png)
+
+具体每一列的详细信息如下：
+
+![image-20220216175527691](https://pic-1259340288.cos.ap-guangzhou.myqcloud.com/img/202202161755271645005327t10sDximage-20220216175527691.png)
+
+
+## 安装 :boat:
 
 ### 安装BSseeker2
 按照BSseeker的[网址](http://pellegrini-legacy.mcdb.ucla.edu/bs_seeker2/)上的介绍安装和使用
@@ -191,10 +205,11 @@ pip install pysam
 pip install scipy
 ```
 
-## 资料来源
+## 资料来源:anchor:
 
 资料主要来源黄湘仪的教程——[18.10.04亚硫酸盐测序数据基本分析流程代码及软件](https://guoweilong.github.io/BSseeker2_CGmapTools_tutorial_181014.pdf)，当然也感谢BSseeker2 和CGmapTools开发者农大的[郭伟龙](http://guoweilong.github.io/)博士（中国农业大学）和朱平博士（天津血研所/北京大学）等人合作开发了DNA甲基化数据分析工具包：[CGmapTools](https://cgmaptools.github.io/)，包含40个独立的命令行工具，提供了全面的DNA甲基化数据分析和可视化功能。目前该工作已经在生物信息学著名期刊**Bioinformatics**上以original paper形式发表。
 
-> Weilong Guo *#, Ping Zhu* , et al. (2017), [CGmapTools improves the precision of heterozygous SNV calls and supports allele-specific methylation detection and visualization in bisulfite-sequencing data](https://doi.org/10.1093/bioinformatics/btx595).
+> Weilong Guo *, Ping Zhu* , et al. (2017), [CGmapTools improves the precision of heterozygous SNV calls and supports allele-specific methylation detection and visualization in bisulfite-sequencing data](https://doi.org/10.1093/bioinformatics/btx595).
 
 **再次感谢各位大佬创建这么好用的软件**
+
