@@ -43,9 +43,9 @@ def run_shell(cmd):
     output = output.decode()
     return (status, output)
 
-if not is_in_path("samtools") and not is_in_path("fastq") and not is_in_path("cgmaptools") and not is_in_path("java"):
-    exit("please check the env if have samtools cgmaptools fasatq")
-
+if not is_in_path("samtools") and not is_in_path("fastp") and not is_in_path("cgmaptools") and not is_in_path("java"):
+    exit("please check the env if have samtools cgmaptools fastp")
+    
 def main():
     parser = argparse.ArgumentParser(
         description="BS-seq analysis workflow base on bsseeker and CGmaptools"
